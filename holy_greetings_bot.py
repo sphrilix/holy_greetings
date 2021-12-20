@@ -44,7 +44,7 @@ class HolyGreetingsBot(Bot):
             await HolyGreetingsBot._add_greet(new_msg, u_id)
 
         @self.command(name="drop")
-        async def _drop(ctx: Context, msg: str, u_id: str = "unknown") -> None:
+        async def _drop(_: Context, msg: str, u_id: str = "unknown") -> None:
             """
             Drop a given greeting for the given user id.
             :param _:
