@@ -14,5 +14,5 @@ Be aware that no greetings are defined initially, so you have to add some before
 - <code>!drop -m [greeting] -u [Optional: user id]</code>:  
   Drops the given greeting from the already saved ones of the given user. If no user id is specified drop from *unknown user*.
 - <code>!lang</code>:  
-  Print out the the supported languages and their corresponding abbreviation used by the bot.
+  Print out the supported languages and their corresponding abbreviation used by the bot.
   [^1]: Every user for whom no greets are defined.
