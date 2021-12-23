@@ -1,1 +1,2 @@
 gtts
+-U discord.py[voice]
