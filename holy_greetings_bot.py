@@ -4,7 +4,10 @@ from discord import Member, VoiceState, TextChannel
 from discord.ext.commands import Bot, Context
 import discord
 from gtts import gTTS
+from gtts import lang
 
+import json_handler
+from greet import Greet
 from json_handler import read_user_by_id, write
 from user import User
 
@@ -25,33 +28,73 @@ class HolyGreetingsBot(Bot):
         self.token = token
 
         @self.command(name="info")
-        async def _info(ctx: Context, u_id: str = "unknown") -> None:
+        async def _info(ctx: Context, *args: str) -> None:
             """
             Send an info message about saved greetings for given u_id. If not given just get info for unknown user.
             :param ctx: Context of the command.
-            :param u_id: The given user id.
+            :param args: Arguments of the command.
             """
-            await HolyGreetingsBot._info_greet(u_id, ctx.channel)
+            u_id = "unknown"
+            for i, arg in enumerate(args[:-1]):
+                if arg == "-u":
+                    u_id = args[i + 1]
+            await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._info_greet(u_id), ctx.channel)
 
         @self.command(name="add")
-        async def _add(_: Context, new_msg: str, u_id: str = "unknown") -> None:
+        async def _add(ctx: Context, *args: str) -> None:
             """
             Add a new given greeting for the given user id.
-            :param _:
-            :param new_msg: The given user id.
-            :param u_id: The given new greeting
+            :param ctx: Context of the written command.
+            :param args: Arguments of the command.
             """
-            await HolyGreetingsBot._add_greet(new_msg, u_id)
+            language = "en"
+            msg = ""
+            u_id = "unknown"
+            for i, arg in enumerate(args[:-1]):
+                if arg == "-l":
+                    language = args[i + 1]
+                if arg == "-u":
+                    u_id = args[i + 1]
+                if arg == "-m":
+                    msg = args[i + 1]
+            if msg == "":
+                await HolyGreetingsBot._write_to_channel("No message given!", ctx.channel)
+            elif lang.tts_langs()[language] is None:
+                await HolyGreetingsBot._write_to_channel(f"Unsupported lang: {language}!", ctx.channel)
+            elif len(msg) > 500:
+                await HolyGreetingsBot._write_to_channel(f"Maximum of 500 character are allowed!", ctx.channel)
+            else:
+                await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._add_greet(msg, u_id, language), ctx.channel)
 
         @self.command(name="drop")
-        async def _drop(_: Context, msg: str, u_id: str = "unknown") -> None:
+        async def _drop(ctx: Context, *args: str) -> None:
             """
             Drop a given greeting for the given user id.
-            :param _:
-            :param new_msg: The given user id.
-            :param u_id: The given greeting.
+            :param ctx: Context of the command.
+            :param args: Arguments of the command.
             """
-            await HolyGreetingsBot._drop_greet(msg, u_id)
+            msg = ""
+            u_id = "unknown"
+            for i, arg in enumerate(args[:-1]):
+                if arg == "-u":
+                    u_id = args[i + 1]
+                if arg == "-m":
+                    msg = args[i + 1]
+            if msg == "":
+                await HolyGreetingsBot._write_to_channel("No message given!", ctx.channel)
+            if json_handler.read_user_by_id(u_id) is None:
+                await HolyGreetingsBot._write_to_channel(f"No user found for {u_id}!", ctx.channel)
+            elif len(msg) > 500:
+                await HolyGreetingsBot._write_to_channel("Maximum of 500 character are allowed!", ctx.channel)
+            else:
+                await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._drop_greet(msg, u_id), ctx.channel)
+
+        @self.command(name="lang")
+        async def _lang(ctx: Context):
+            langs = lang.tts_langs()
+            await HolyGreetingsBot._write_to_channel(f"Languages: {chr(10)}"
+                                                     f"{chr(10).join([f'{k}={v}' for k, v in langs.items()])}",
+                                                     ctx.channel)
 
         @self.event
         async def on_voice_state_update(member: Member, before: VoiceState, after: VoiceState) -> None:
@@ -88,8 +131,8 @@ class HolyGreetingsBot(Bot):
         """
         channel = after.channel
         user = read_user_by_id(member.name)
-        msg = random.choice(user.msgs)
-        tts = gTTS(msg)
+        greet = random.choice(user.greets)
+        tts = gTTS(greet.msg, lang=greet.lang)
         tts.save("tts.mp3")
         await HolyGreetingsBot._play(channel)
 
@@ -108,45 +151,50 @@ class HolyGreetingsBot(Bot):
         await voice_client.disconnect()
 
     @staticmethod
-    async def _add_greet(new_msg: str, u_id: str) -> None:
+    def _add_greet(new_msg: str, u_id: str, language: str) -> str:
         """
         Helper method to add the given greeting for the given user.
         :param msg: The given greeting.
         :param u_id: The given user id.
         """
         user = read_user_by_id(u_id)
+        new_greet = Greet(new_msg, language)
         if user is None:
             user = User(u_id, list())
-        if new_msg not in user.msgs:
-            user.msgs.append(new_msg)
+        if new_greet in user.greets:
+            return f"{u_id} has already: '{new_msg}'!"
+        user.greets.append(new_greet)
         write(user)
+        return f"Appended '{new_msg}' for '{u_id}'."
 
     @staticmethod
-    async def _drop_greet(msg: str, u_id: str) -> None:
+    def _drop_greet(msg: str, u_id: str) -> str:
         """
         Helper method to drop the given greeting for the given user.
         :param msg: The given greeting.
         :param u_id: The given user id.
         """
         user = read_user_by_id(u_id)
-        if user is None or msg not in user.msgs:
-            return
-        user.msgs.remove(msg)
-        write(user)
+        if user is None or msg not in [greet.msg for greet in user.greets]:
+            return f"Could not drop '{msg}' for '{u_id}'! There maybe a typo in the message, since it is not present " \
+                   f"for '{u_id}'!"
+        else:
+            user.greets.remove(Greet(msg))
+            write(user)
+            return f"Dropped '{msg}' for '{u_id}'."
 
     @staticmethod
-    async def _info_greet(u_id: str, channel: TextChannel) -> None:
+    def _info_greet(u_id: str) -> str:
         """
         Helper method for printing info for the given user id in the given channel.
         :param u_id: The given user id.
-        :param channel: The given channel.
         """
         user = read_user_by_id(u_id)
-        if user is None or user.msgs is None or user.msgs == list():
-            await HolyGreetingsBot._write_to_channel(f"No greetings found for {u_id}!", channel)
+        if user is None or user.greets is None or user.greets == list():
+            return f"No greetings found for '{u_id}'!"
         else:
-            await HolyGreetingsBot._write_to_channel(f"For '{u_id}' the following greetings have been found: {chr(10)}"
-                                                     + f"{chr(10).join('- ' + msg for msg in user.msgs)}", channel)
+            return f"For '{u_id}' the following greetings have been found: {chr(10)}" \
+                   f"{chr(10).join('- ' + greet.msg for greet in user.greets)}"
 
     @staticmethod
     async def _write_to_channel(msg: str, channel: TextChannel) -> None:
