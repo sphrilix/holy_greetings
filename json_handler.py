@@ -1,6 +1,8 @@
 import json
-from user import User
+import os.path
 
+from greet import Greet
+from user import User
 
 FILE = "./greets.json"
 
@@ -11,10 +13,12 @@ def read() -> list[User]:
     :return: Returns a list of users. If it is empty returns an empty list.
     """
     users = list()
+    if os.path.getsize(FILE) < 2:
+        return users
     with open(FILE, "r") as f:
         data = json.load(f)
         for u_raw in data["users"]:
-            users.append(User(u_raw["u_id"], [msg for msg in u_raw["msgs"]]))
+            users.append(User(u_raw["u_id"], [Greet(raw_msg["msg"], raw_msg["lang"]) for raw_msg in u_raw["msgs"]]))
     return users
 
 
@@ -28,7 +32,6 @@ def read_user_by_id(u_id: str) -> User:
     for u in users:
         if u_id == u.u_id:
             return u
-    return None
 
 
 def write(user: User) -> None:
@@ -43,4 +46,3 @@ def write(user: User) -> None:
     with open(FILE, "w") as f:
         data = {"users": [u.to_json() for u in users]}
         json.dump(data, f)
-
