@@ -1,7 +1,7 @@
 # holy_greetings
 Discord-Bot to add automatic customizable greetings over voice chat if someone joining the server.
 ## 1. Init
-1. <code>pip install requirements.txt</code>
+1. <code>pip install -r requirements.txt</code>
 2. Get a token and give the bot access to your Discord (see: https://www.writebots.com/discord-bot-token/).
 3. After getting the token, run: <code>python main.py [insert token]</code>
 ## 2. Usage
