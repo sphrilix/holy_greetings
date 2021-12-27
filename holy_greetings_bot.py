@@ -131,6 +131,8 @@ class HolyGreetingsBot(Bot):
         """
         channel = after.channel
         user = read_user_by_id(member.name)
+        if user is None and read_user_by_id("unknown") is None:
+            return
         greet = random.choice(user.greets)
         tts = gTTS(greet.msg, lang=greet.lang)
         tts.save("tts.mp3")
