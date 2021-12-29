@@ -1,4 +1,5 @@
 from greet import Greet
+from mp3_greet import MP3Greet
 
 
 class User:
@@ -35,4 +36,5 @@ class User:
         Construct a valid JSON representation of an user.
         :return: Returns the JSON representation.
         """
-        return {"u_id": self.u_id, "msgs": [greet.to_json() for greet in self.greets]}
+        return {"u_id": self.u_id,
+                "msgs": [greet.to_json() for greet in self.greets]}

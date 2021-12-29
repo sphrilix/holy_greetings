@@ -2,6 +2,8 @@ import json
 import os.path
 
 from greet import Greet
+from mp3_greet import MP3Greet
+from play_options import to_play_option
 from user import User
 
 FILE = "./greets.json"
@@ -18,7 +20,7 @@ def read() -> list[User]:
     with open(FILE, "r") as f:
         data = json.load(f)
         for u_raw in data["users"]:
-            users.append(User(u_raw["u_id"], [Greet(raw_msg["msg"], raw_msg["lang"]) for raw_msg in u_raw["msgs"]]))
+            users.append(_decode_user(u_raw))
     return users
 
 
@@ -46,3 +48,17 @@ def write(user: User) -> None:
     with open(FILE, "w") as f:
         data = {"users": [u.to_json() for u in users]}
         json.dump(data, f)
+
+
+def _decode_user(u_raw: json) -> User:
+    u_id = u_raw["u_id"]
+    raw_msgs = u_raw["msgs"]
+    msgs: list[Greet] = list()
+    for raw_msg in raw_msgs:
+        if "file" in raw_msg:
+            raw_file = raw_msg["file"]
+            msgs.append(Greet(raw_msg["msg"], raw_msg["lang"], MP3Greet(raw_file["file_path"],
+                                                                        to_play_option(raw_file["option"]))))
+        else:
+            msgs.append(Greet(raw_msg["msg"], raw_msg["lang"]))
+    return User(u_id, msgs)
