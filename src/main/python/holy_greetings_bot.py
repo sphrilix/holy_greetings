@@ -9,7 +9,7 @@ from gtts import gTTS
 from gtts import lang
 
 import json_handler
-from greet import Greet
+from src.main.python.greet import Greet
 from json_handler import read_user_by_id, write
 from mp3_greet import MP3Greet
 from play_options import PlayOption, to_play_option
@@ -150,16 +150,16 @@ class HolyGreetingsBot(Bot):
         greet = random.choice(user.greets)
         if greet.file is None:
             tts = gTTS(greet.msg, lang=greet.lang)
-            tts.save("tts.mp3")
-            await HolyGreetingsBot._play(channel, ("./tts.mp3", -1))
+            tts.save("./mp3/tts.mp3")
+            await HolyGreetingsBot._play(channel, ("./mp3/tts.mp3", -1))
         else:
             if greet.file.option == PlayOption.ONLY or greet.msg == "":
                 await HolyGreetingsBot._play(channel, (greet.file.file_path, 10))
             else:
                 tts = gTTS(greet.msg, lang=greet.lang)
-                tts.save("tts.mp3")
-                tracks = [("./tts.mp3", -1), (greet.file.file_path, 5)] if greet.file.option == PlayOption.END else \
-                    [(greet.file.file_path, 5), ("./tts.mp3", -1)]
+                tts.save("./mp3/tts.mp3")
+                tracks = [("./mp3/tts.mp3", -1), (greet.file.file_path, 5)] if greet.file.option == PlayOption.END \
+                    else [(greet.file.file_path, 5), ("./mp3/tts.mp3", -1)]
                 await HolyGreetingsBot._play(channel, *tracks)
 
     @staticmethod
@@ -254,5 +254,5 @@ class HolyGreetingsBot(Bot):
             return f"For '{u_id}' already two greetings with mp3 are specified!"
         user.greets.append(new_mp3_greet)
         write(user)
-        await file.save(f"mp3/{u_id}_{file.filename}")
+        await file.save(f"./mp3/{u_id}_{file.filename}")
         return f"Appended '{file.filename}' for '{u_id}'."

@@ -1,7 +1,7 @@
 import json
 import os.path
 
-from greet import Greet
+from src.main.python.greet import Greet
 from mp3_greet import MP3Greet
 from play_options import to_play_option
 from user import User

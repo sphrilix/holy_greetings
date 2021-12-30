@@ -1,5 +1,4 @@
-from greet import Greet
-from mp3_greet import MP3Greet
+from src.main.python.greet import Greet
 
 
 class User:
