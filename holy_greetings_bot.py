@@ -154,7 +154,7 @@ class HolyGreetingsBot(Bot):
             await HolyGreetingsBot._play(channel, ("./tts.mp3", -1))
         else:
             if greet.file.option == PlayOption.ONLY or greet.msg == "":
-                await HolyGreetingsBot._play(channel, (greet.file.file_path, 5))
+                await HolyGreetingsBot._play(channel, (greet.file.file_path, 10))
             else:
                 tts = gTTS(greet.msg, lang=greet.lang)
                 tts.save("tts.mp3")
