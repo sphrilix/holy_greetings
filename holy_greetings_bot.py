@@ -1,3 +1,4 @@
+import os
 import random
 from time import sleep
 
@@ -209,7 +210,10 @@ class HolyGreetingsBot(Bot):
             return f"Could not drop '{msg}' for '{u_id}'! There maybe a typo in the message, since it is not present " \
                    f"for '{u_id}'!"
         else:
-            user.greets.remove(Greet(msg))
+            greet = user.greets[user.greets.index(Greet(msg))]
+            if greet.file:
+                os.remove(greet.file.file_path)
+            user.greets.remove(greet)
             write(user)
             return f"Dropped '{msg}' for '{u_id}'."
 
@@ -243,7 +247,11 @@ class HolyGreetingsBot(Bot):
         if user is None:
             user = User(u_id, list())
         if new_mp3_greet in user.greets:
-            return f"{u_id} has already: '{file.filename}'!"
+            return f"{u_id} has already: '{msg}'!"
+        if file.size > 2000000:
+            return f"'{file.filename}' is to big a max of 2MB are allowed."
+        if len([greet for greet in user.greets if greet.file is not None]) > 2:
+            return f"For '{u_id}' already two greetings with mp3 are specified!"
         user.greets.append(new_mp3_greet)
         write(user)
         await file.save(f"mp3/{u_id}_{file.filename}")
