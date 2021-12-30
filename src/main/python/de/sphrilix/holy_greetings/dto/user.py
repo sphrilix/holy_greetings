@@ -1,4 +1,4 @@
-from src.main.python.greet import Greet
+from de.sphrilix.holy_greetings.dto.greet import Greet
 
 
 class User:

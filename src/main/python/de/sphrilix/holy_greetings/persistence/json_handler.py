@@ -1,12 +1,12 @@
 import json
 import os.path
 
-from src.main.python.greet import Greet
-from mp3_greet import MP3Greet
-from play_options import to_play_option
-from user import User
+from de.sphrilix.holy_greetings.dto.greet import Greet
+from de.sphrilix.holy_greetings.dto.mp3_greet import MP3Greet
+from de.sphrilix.holy_greetings.dto.play_options import to_play_option
+from de.sphrilix.holy_greetings.dto.user import User
 
-FILE = "./greets.json"
+FILE = "../../../../../../greets.json"
 
 
 def read() -> list[User]:

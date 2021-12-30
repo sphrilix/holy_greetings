@@ -1,4 +1,4 @@
-from play_options import PlayOption
+from de.sphrilix.holy_greetings.dto.play_options import PlayOption
 
 
 class MP3Greet:

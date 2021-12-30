@@ -8,12 +8,17 @@ import discord
 from gtts import gTTS
 from gtts import lang
 
-import json_handler
-from src.main.python.greet import Greet
-from json_handler import read_user_by_id, write
-from mp3_greet import MP3Greet
-from play_options import PlayOption, to_play_option
-from user import User
+from de.sphrilix.holy_greetings.persistence import json_handler
+from de.sphrilix.holy_greetings.dto.greet import Greet
+from de.sphrilix.holy_greetings.persistence.json_handler import read_user_by_id, write
+from de.sphrilix.holy_greetings.dto.mp3_greet import MP3Greet
+from de.sphrilix.holy_greetings.dto.play_options import PlayOption, to_play_option
+from de.sphrilix.holy_greetings.dto.user import User
+
+MP3_DIR = "../../../../../../mp3/"
+
+
+TTS_FILE = f"{MP3_DIR}tts.mp3"
 
 
 class HolyGreetingsBot(Bot):
@@ -150,16 +155,16 @@ class HolyGreetingsBot(Bot):
         greet = random.choice(user.greets)
         if greet.file is None:
             tts = gTTS(greet.msg, lang=greet.lang)
-            tts.save("./mp3/tts.mp3")
-            await HolyGreetingsBot._play(channel, ("./mp3/tts.mp3", -1))
+            tts.save(TTS_FILE)
+            await HolyGreetingsBot._play(channel, (TTS_FILE, -1))
         else:
             if greet.file.option == PlayOption.ONLY or greet.msg == "":
                 await HolyGreetingsBot._play(channel, (greet.file.file_path, 10))
             else:
                 tts = gTTS(greet.msg, lang=greet.lang)
-                tts.save("./mp3/tts.mp3")
-                tracks = [("./mp3/tts.mp3", -1), (greet.file.file_path, 5)] if greet.file.option == PlayOption.END \
-                    else [(greet.file.file_path, 5), ("./mp3/tts.mp3", -1)]
+                tts.save(TTS_FILE)
+                tracks = [(TTS_FILE, -1), (greet.file.file_path, 5)] if greet.file.option == PlayOption.END \
+                    else [(greet.file.file_path, 5), (TTS_FILE, -1)]
                 await HolyGreetingsBot._play(channel, *tracks)
 
     @staticmethod
@@ -242,7 +247,7 @@ class HolyGreetingsBot(Bot):
     @staticmethod
     async def _add_mp3_greet(u_id: str, msg: str, language: str, file: Attachment, option: PlayOption) -> str:
         user = read_user_by_id(u_id)
-        file_path = f"./mp3/{u_id}_{file.filename}"
+        file_path = f"{MP3_DIR}{u_id}_{file.filename}"
         new_mp3_greet = Greet(msg, language, MP3Greet(file_path, option))
         if user is None:
             user = User(u_id, list())
@@ -254,5 +259,5 @@ class HolyGreetingsBot(Bot):
             return f"For '{u_id}' already two greetings with mp3 are specified!"
         user.greets.append(new_mp3_greet)
         write(user)
-        await file.save(f"./mp3/{u_id}_{file.filename}")
+        await file.save(f"{MP3_DIR}{u_id}_{file.filename}")
         return f"Appended '{file.filename}' for '{u_id}'."

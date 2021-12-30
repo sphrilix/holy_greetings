@@ -1,4 +1,4 @@
-from mp3_greet import MP3Greet
+from de.sphrilix.holy_greetings.dto.mp3_greet import MP3Greet
 
 
 class Greet:

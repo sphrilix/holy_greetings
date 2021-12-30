@@ -1,4 +1,4 @@
-from holy_greetings_bot import HolyGreetingsBot
+from de.sphrilix.holy_greetings.bot.holy_greetings_bot import HolyGreetingsBot
 import sys
 
 if __name__ == "__main__":
