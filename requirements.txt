@@ -1,3 +1,5 @@
 gtts
 discord.py[voice]
 flask
+flask-wtf
+wtforms

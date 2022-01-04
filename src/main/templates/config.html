@@ -1,10 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <title>Config</title>
 </head>
 <body>
-    <h1>Hello world!</h1>
+    <div class="container" style="align-items: center">
+        <h1 class="text-center">holy_greetings</h1>
+    </div>
+    <div class="container" style="width: 50%; margin-top: 50px">
+        <div class="card">
+            <div class="card-body">
+                <div id="runForm">
+                    <h2 style="padding: 0 12px">
+                        Status:
+                        {% if running%}
+                        <span class="text-success">Running</span>
+                        {% else %}
+                        <span class="text-danger">Stopped</span>
+                        {% endif %}
+                    </h2>
+                    {% if not running%}
+                        <form action="/start" method="post" novalidate>
+                            {{ run_form.hidden_tag() }}
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-9">
+                                        <label>Discord API Key</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-9">
+                                        <!--<input class="form-control" id="apiKey" placeholder="Enter Discord API Key">-->
+                                        {{run_form.token(class="form-control")}}
+                                    </div>
+                                    <div class="col-3">
+                                        <!--<button type="submit" class="btn btn-success col-12">Run</button>-->
+                                        {{run_form.submit(class="btn btn-success col-12")}}
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card" style="margin-top: 50px">
+            <div class="card-body">
+                <h2 style="padding: 0 12px">Configuration</h2>
+                <form action="/config" method="post" novalidate>
+                    {{ config_form.hidden_tag() }}
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-12">
+                                <label>Maximum characters for every greeting</label>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-bottom: 12px">
+                            <div class="col-12">
+                                <!--<input class="form-control" id="maxChar" placeholder="500" type="number">-->
+                                {{config_form.max_char(class="form-control", value=config.max_char)}}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label>Playtime MP3 on greetings</label>
+                            </div>
+                            <div class="col-6">
+                                <label>Playtime MP3 on Only</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <!--<input class="form-control" id="woMp3" placeholder="10" type="number">-->
+                                {{config_form.max_play(class="form-control", value=config.max_play)}}
+                            </div>
+                            <div class="col-6">
+                                <!--<input class="form-control" id="mp3" placeholder="5" type="number">-->
+                                {{config_form.max_play_only(class="form-control", value=config.max_play_only)}}
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top: 12px">
+                            <div class="col-9">
+
+                            </div>
+                            <div class="col-3">
+                                {{config_form.submit(class="btn btn-primary col-12")}}
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

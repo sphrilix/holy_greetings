@@ -1,5 +1,6 @@
 import os
 import random
+from collections import Awaitable
 from time import sleep
 
 from discord import Member, VoiceState, TextChannel, Attachment
@@ -10,13 +11,13 @@ from gtts import lang
 
 from de.sphrilix.holy_greetings.persistence import json_handler
 from de.sphrilix.holy_greetings.dto.greet import Greet
+from de.sphrilix.holy_greetings.persistence.config_handler import ConfigHandler
 from de.sphrilix.holy_greetings.persistence.json_handler import read_user_by_id, write
 from de.sphrilix.holy_greetings.dto.mp3_greet import MP3Greet
 from de.sphrilix.holy_greetings.dto.play_options import PlayOption, to_play_option
 from de.sphrilix.holy_greetings.dto.user import User
 
 MP3_DIR = "../../../../../../mp3/"
-
 
 TTS_FILE = f"{MP3_DIR}tts.mp3"
 
@@ -33,7 +34,10 @@ class HolyGreetingsBot(Bot):
         :param token: The token needed to identify and register the bot.
         """
         super().__init__(command_prefix=command_prefix)
-
+        config = ConfigHandler().read()
+        self._max_char = config.max_char
+        self._max_play = config.max_play
+        self._max_play_only = config.max_play_only
         self.token = token
 
         @self.command(name="info")
@@ -73,7 +77,7 @@ class HolyGreetingsBot(Bot):
                 await HolyGreetingsBot._write_to_channel("No message given!", ctx.channel)
             elif lang.tts_langs()[language] is None:
                 await HolyGreetingsBot._write_to_channel(f"Unsupported lang: {language}!", ctx.channel)
-            elif len(msg) > 500:
+            elif len(msg) > self._max_char:
                 await HolyGreetingsBot._write_to_channel(f"Maximum of 500 character are allowed!", ctx.channel)
             elif not ctx.message.attachments:
                 await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._add_greet(msg, u_id, language), ctx.channel)
@@ -103,7 +107,7 @@ class HolyGreetingsBot(Bot):
                 await HolyGreetingsBot._write_to_channel("No message given!", ctx.channel)
             if json_handler.read_user_by_id(u_id) is None:
                 await HolyGreetingsBot._write_to_channel(f"No user found for {u_id}!", ctx.channel)
-            elif len(msg) > 500:
+            elif len(msg) > self._max_char:
                 await HolyGreetingsBot._write_to_channel("Maximum of 500 character are allowed!", ctx.channel)
             else:
                 await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._drop_greet(msg, u_id), ctx.channel)
@@ -135,14 +139,17 @@ class HolyGreetingsBot(Bot):
         """
         super().run(self.token)
 
+    async def start_bot(self):
+        print("start")
+        await super().start(self.token)
+
     async def on_ready(self) -> None:
         """
         Print out when ready.
         """
         print(f"Connected with {self.user.display_name}")
 
-    @staticmethod
-    async def _greet(member: Member, after: VoiceState) -> None:
+    async def _greet(self, member: Member, after: VoiceState) -> None:
         """
         Helper method to greet a given member.
         :param member: The given member.
@@ -159,12 +166,12 @@ class HolyGreetingsBot(Bot):
             await HolyGreetingsBot._play(channel, (TTS_FILE, -1))
         else:
             if greet.file.option == PlayOption.ONLY or greet.msg == "":
-                await HolyGreetingsBot._play(channel, (greet.file.file_path, 10))
+                await HolyGreetingsBot._play(channel, (greet.file.file_path, self._max_play_only))
             else:
                 tts = gTTS(greet.msg, lang=greet.lang)
                 tts.save(TTS_FILE)
-                tracks = [(TTS_FILE, -1), (greet.file.file_path, 5)] if greet.file.option == PlayOption.END \
-                    else [(greet.file.file_path, 5), (TTS_FILE, -1)]
+                tracks = [(TTS_FILE, -1), (greet.file.file_path, self._max_play)] \
+                    if greet.file.option == PlayOption.END else [(greet.file.file_path, self._max_play), (TTS_FILE, -1)]
                 await HolyGreetingsBot._play(channel, *tracks)
 
     @staticmethod
@@ -261,3 +268,4 @@ class HolyGreetingsBot(Bot):
         write(user)
         await file.save(f"{MP3_DIR}{u_id}_{file.filename}")
         return f"Appended '{file.filename}' for '{u_id}'."
+

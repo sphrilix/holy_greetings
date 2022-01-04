@@ -1,9 +1,9 @@
-from de.sphrilix.holy_greetings.bot.holy_greetings_bot import HolyGreetingsBot
-import sys
+from de.sphrilix.holy_greetings.dto.config import Config
+from de.sphrilix.holy_greetings.persistence.config_handler import ConfigHandler
+from de.sphrilix.holy_greetings.web_app import dispatch
 
 if __name__ == "__main__":
-    """
-    Start bot with python main.py [token].
-    """
-    b = HolyGreetingsBot(sys.argv[1])
-    b.run()
+    if not ConfigHandler().read():
+        c = Config("", 500, 5, 10)
+        ConfigHandler().write(c)
+    dispatch.APP.run(debug=True)

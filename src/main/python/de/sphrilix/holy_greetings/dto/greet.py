@@ -1,7 +1,8 @@
+from de.sphrilix.holy_greetings.dto.json_object_interface import JsonObjectInterface
 from de.sphrilix.holy_greetings.dto.mp3_greet import MP3Greet
 
 
-class Greet:
+class Greet(JsonObjectInterface):
 
     def __init__(self, msg: str, lang: str = "en", file: MP3Greet = None):
         self.msg = msg

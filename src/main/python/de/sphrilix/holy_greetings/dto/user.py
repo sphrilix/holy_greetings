@@ -1,7 +1,8 @@
 from de.sphrilix.holy_greetings.dto.greet import Greet
+from de.sphrilix.holy_greetings.dto.json_object_interface import JsonObjectInterface
 
 
-class User:
+class User(JsonObjectInterface):
     """
     Wrapper class for a dc user with greetings.
     """

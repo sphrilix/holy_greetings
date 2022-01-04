@@ -1,7 +1,8 @@
+from de.sphrilix.holy_greetings.dto.json_object_interface import JsonObjectInterface
 from de.sphrilix.holy_greetings.dto.play_options import PlayOption
 
 
-class MP3Greet:
+class MP3Greet(JsonObjectInterface):
 
     def __init__(self, file_path: str, option: PlayOption = PlayOption.ONLY):
         self.file_path = file_path
