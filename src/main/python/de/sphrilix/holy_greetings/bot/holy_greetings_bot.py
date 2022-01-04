@@ -8,6 +8,7 @@ from discord.ext.commands import Bot, Context
 import discord
 from gtts import gTTS
 from gtts import lang
+from pip._internal.utils.deprecation import deprecated
 
 from de.sphrilix.holy_greetings.persistence import json_handler
 from de.sphrilix.holy_greetings.dto.greet import Greet
@@ -35,9 +36,11 @@ class HolyGreetingsBot(Bot):
         """
         super().__init__(command_prefix=command_prefix)
         config = ConfigHandler().read()
-        self._max_char = config.max_char
-        self._max_play = config.max_play
-        self._max_play_only = config.max_play_only
+        self.max_char = config.max_char
+        self.max_play = config.max_play
+        self.max_play_only = config.max_play_only
+        self.max_sound_greets = config.max_sound_greets
+        self.max_sound_size = config.max_sound_size
         self.token = token
 
         @self.command(name="info")
@@ -77,7 +80,7 @@ class HolyGreetingsBot(Bot):
                 await HolyGreetingsBot._write_to_channel("No message given!", ctx.channel)
             elif lang.tts_langs()[language] is None:
                 await HolyGreetingsBot._write_to_channel(f"Unsupported lang: {language}!", ctx.channel)
-            elif len(msg) > self._max_char:
+            elif len(msg) > self.max_char:
                 await HolyGreetingsBot._write_to_channel(f"Maximum of 500 character are allowed!", ctx.channel)
             elif not ctx.message.attachments:
                 await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._add_greet(msg, u_id, language), ctx.channel)
@@ -86,7 +89,7 @@ class HolyGreetingsBot(Bot):
             elif ctx.message.attachments[0].content_type != "audio/mpeg":
                 await HolyGreetingsBot._write_to_channel(f"Only MP3-Files can be appended!", ctx.channel)
             elif ctx.message.attachments:
-                await HolyGreetingsBot._write_to_channel(await HolyGreetingsBot._add_mp3_greet(
+                await HolyGreetingsBot._write_to_channel(await self._add_mp3_greet(
                     u_id, msg, language, ctx.message.attachments[0], option), ctx.channel)
 
         @self.command(name="drop")
@@ -107,7 +110,7 @@ class HolyGreetingsBot(Bot):
                 await HolyGreetingsBot._write_to_channel("No message given!", ctx.channel)
             if json_handler.read_user_by_id(u_id) is None:
                 await HolyGreetingsBot._write_to_channel(f"No user found for {u_id}!", ctx.channel)
-            elif len(msg) > self._max_char:
+            elif len(msg) > self.max_char:
                 await HolyGreetingsBot._write_to_channel("Maximum of 500 character are allowed!", ctx.channel)
             else:
                 await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._drop_greet(msg, u_id), ctx.channel)
@@ -166,12 +169,12 @@ class HolyGreetingsBot(Bot):
             await HolyGreetingsBot._play(channel, (TTS_FILE, -1))
         else:
             if greet.file.option == PlayOption.ONLY or greet.msg == "":
-                await HolyGreetingsBot._play(channel, (greet.file.file_path, self._max_play_only))
+                await HolyGreetingsBot._play(channel, (greet.file.file_path, self.max_play_only))
             else:
                 tts = gTTS(greet.msg, lang=greet.lang)
                 tts.save(TTS_FILE)
-                tracks = [(TTS_FILE, -1), (greet.file.file_path, self._max_play)] \
-                    if greet.file.option == PlayOption.END else [(greet.file.file_path, self._max_play), (TTS_FILE, -1)]
+                tracks = [(TTS_FILE, -1), (greet.file.file_path, self.max_play)] \
+                    if greet.file.option == PlayOption.END else [(greet.file.file_path, self.max_play), (TTS_FILE, -1)]
                 await HolyGreetingsBot._play(channel, *tracks)
 
     @staticmethod
@@ -251,8 +254,7 @@ class HolyGreetingsBot(Bot):
         """
         await channel.send(msg)
 
-    @staticmethod
-    async def _add_mp3_greet(u_id: str, msg: str, language: str, file: Attachment, option: PlayOption) -> str:
+    async def _add_mp3_greet(self, u_id: str, msg: str, language: str, file: Attachment, option: PlayOption) -> str:
         user = read_user_by_id(u_id)
         file_path = f"{MP3_DIR}{u_id}_{file.filename}"
         new_mp3_greet = Greet(msg, language, MP3Greet(file_path, option))
@@ -260,12 +262,11 @@ class HolyGreetingsBot(Bot):
             user = User(u_id, list())
         if new_mp3_greet in user.greets:
             return f"{u_id} has already: '{msg}'!"
-        if file.size > 2000000:
+        if file.size > self.max_sound_size:
             return f"'{file.filename}' is to big a max of 2MB are allowed."
-        if len([greet for greet in user.greets if greet.file is not None]) > 2:
+        if len([greet for greet in user.greets if greet.file is not None]) > self.max_sound_greets:
             return f"For '{u_id}' already two greetings with mp3 are specified!"
         user.greets.append(new_mp3_greet)
         write(user)
         await file.save(f"{MP3_DIR}{u_id}_{file.filename}")
         return f"Appended '{file.filename}' for '{u_id}'."
-

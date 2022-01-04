@@ -1,6 +1,7 @@
 from flask import Response
 from flask import Flask, render_template, redirect
 
+from de.sphrilix.holy_greetings.dto.config import Config
 from de.sphrilix.holy_greetings.web_app.forms.config_form import ConfigForm
 from de.sphrilix.holy_greetings.web_app.forms.run_form import RunForm
 from de.sphrilix.holy_greetings.web_app.service.bot_service import BotService
@@ -37,6 +38,7 @@ def start() -> Response:
 def config() -> Response:
     form = ConfigForm()
     if form.validate_on_submit():
-        print("exe")
-        BOT_SERVICE.update_config(form.max_char.data, form.max_play.data, form.max_play_only.data)
+        c = Config("", form.max_char.data, form.max_play.data, form.max_play_only.data, form.max_sound_greets.data,
+                   form.max_size_sound_in_mb.data * 1000000)
+        BOT_SERVICE.update_config(c)
     return redirect("/")

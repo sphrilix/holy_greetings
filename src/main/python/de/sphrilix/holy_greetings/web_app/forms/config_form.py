@@ -1,15 +1,11 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, IntegerField
-
-from de.sphrilix.holy_greetings.persistence.config_handler import ConfigHandler
+from wtforms import SubmitField, IntegerField
 
 
 class ConfigForm(FlaskForm):
-    """c = ConfigHandler().read()
-    max_char = StringField("max_char", default=c.max_char)
-    max_play = IntegerField("max_play", default=c.max_play)
-    max_play_only = IntegerField("max_play_only", default=c.max_play_only)"""
     max_char = IntegerField("max_char")
     max_play = IntegerField("max_play")
     max_play_only = IntegerField("max_play_only")
+    max_sound_greets = IntegerField("max_sound_greets")
+    max_size_sound_in_mb = IntegerField("max_size_sound_in_mb")
     submit = SubmitField("Submit")

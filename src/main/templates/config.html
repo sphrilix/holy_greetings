@@ -83,6 +83,24 @@
                             </div>
                         </div>
                         <div class="row" style="margin-top: 12px">
+                            <div class="col-6">
+                                <label>Maximum of greets with sound</label>
+                            </div>
+                            <div class="col-6">
+                                <label>Maximum size of a sound</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <!--<input class="form-control" id="woMp3" placeholder="10" type="number">-->
+                                {{config_form.max_sound_greets(class="form-control", value=config.max_sound_greets)}}
+                            </div>
+                            <div class="col-6">
+                                <!--<input class="form-control" id="mp3" placeholder="5" type="number">-->
+                                {{config_form.max_size_sound_in_mb(class="form-control", value=config.max_sound_size//1000000)}}
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top: 12px">
                             <div class="col-9">
 
                             </div>

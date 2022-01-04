@@ -23,7 +23,8 @@ class ConfigHandler(JsonHandlerInterface[Config]):
             return None
         with open(self.CONFIG_FILE, "r") as f:
             data = json.load(f)
-            return Config(data["token"], data["max_char"], data["max_play"], data["max_play_only"])
+            return Config(data["token"], data["max_char"], data["max_play"], data["max_play_only"],
+                          data["max_sound_greets"], data["max_sound_size"])
 
     def write(self, config: Config):
         with open(self.CONFIG_FILE, "w") as f:
