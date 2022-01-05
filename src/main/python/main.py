@@ -1,8 +1,14 @@
+import sys
+
+
 import os
 
 from de.sphrilix.holy_greetings.dto.config import Config
 from de.sphrilix.holy_greetings.persistence.config_handler import ConfigHandler
 from de.sphrilix.holy_greetings.web_app import dispatch
+
+
+sys.path.append("de/sphrilix/holy_greetings")
 
 if __name__ == "__main__":
     if not os.path.exists("../../../../../../mp3/"):
