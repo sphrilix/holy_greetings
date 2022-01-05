@@ -31,7 +31,7 @@ class GreetingsHandler(JsonHandlerInterface[User]):
         :return: Returns a list of users. If it is empty returns an empty list.
         """
         users = list()
-        if os.path.getsize(FILE) < 2:
+        if os.path.getsize(self.FILE) < 2:
             return users
         with open(self.FILE, "r") as f:
             data = json.load(f)
