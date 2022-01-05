@@ -9,11 +9,18 @@ from de.sphrilix.holy_greetings.persistence.json_handler_interface import JsonHa
 
 
 class GreetingsHandler(JsonHandlerInterface[User]):
+    """
+    Reading and writing from users to the hard drive.
+    """
+
     _instance = None
 
     FILE = "../../../../../../greets.json"
 
     def __new__(cls):
+        """
+        Ensure Singleton.
+        """
         if not cls._instance:
             cls._instance = super(GreetingsHandler, cls).__new__(cls)
         return cls._instance

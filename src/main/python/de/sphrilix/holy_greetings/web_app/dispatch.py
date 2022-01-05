@@ -15,6 +15,10 @@ BOT_SERVICE = BotService()
 
 @APP.route("/")
 def index() -> str:
+    """
+    Returns index page.
+    :return: Index page.
+    """
     run_form = RunForm()
     config_form = ConfigForm()
     c = BOT_SERVICE.get_config()
@@ -27,6 +31,10 @@ def index() -> str:
 
 @APP.route("/start", methods=["POST"])
 def start() -> Response:
+    """
+    Listen on start form.
+    :return: Redirect to index.
+    """
     form = RunForm()
     if form.validate_on_submit():
         BOT_SERVICE.token = form.token.data
@@ -36,6 +44,10 @@ def start() -> Response:
 
 @APP.route("/config", methods=["POST"])
 def config() -> Response:
+    """
+    Listen on config form
+    :return: Redirect to index.
+    """
     form = ConfigForm()
     if form.validate_on_submit():
         c = Config("", form.max_char.data, form.max_play.data, form.max_play_only.data, form.max_sound_greets.data,

@@ -7,6 +7,10 @@ from de.sphrilix.holy_greetings.persistence.config_handler import ConfigHandler
 
 
 class BotService(Thread):
+    """
+    Service for the bot.
+    """
+
     _CONFIG_HANDLER = ConfigHandler()
 
     _BOT_INSTANCE = None
@@ -16,15 +20,20 @@ class BotService(Thread):
     _loop = None
 
     def __init__(self):
+        """
+        Set initial params.
+        """
         Thread.__init__(self)
         self._loop = asyncio.get_event_loop()
         self.start()
         config: Config = self._CONFIG_HANDLER.read()
         if config and config.token != "":
-            print("here")
             self.token = config.token
 
     def run(self) -> None:
+        """
+        Start bot if not running.
+        """
         if not self._BOT_INSTANCE and self.token != "":
             c = ConfigHandler().read()
             c.token = self.token
@@ -39,10 +48,17 @@ class BotService(Thread):
         await self._BOT_INSTANCE.start_bot()
 
     def is_running(self) -> bool:
+        """
+        Determine whether bot is running or not.
+        :return: Returns whether bot is running or not.
+        """
         return self.token != ""
 
     def update_config(self, c: Config) -> None:
-        print("hello")
+        """
+        Update the config on the hard drive.
+        :param c: The update config.
+        """
         if self._BOT_INSTANCE:
             self._BOT_INSTANCE.max_char = c.max_char
             self._BOT_INSTANCE.max_play = c.max_play
@@ -57,10 +73,17 @@ class BotService(Thread):
         config.max_sound_size = c.max_sound_size
         ConfigHandler().write(config)
 
-    def stop(self):
+    def stop(self) -> None:
+        """
+        Stop the bot
+        """
         self.join(1)
 
     @staticmethod
     def get_config():
+        """
+        Get the actual config.
+        :return: Returns the actual config.
+        """
         return ConfigHandler().read()
 

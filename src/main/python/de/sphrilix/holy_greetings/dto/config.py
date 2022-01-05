@@ -2,6 +2,7 @@ from de.sphrilix.holy_greetings.dto.json_object_interface import JsonObjectInter
 
 
 class Config(JsonObjectInterface):
+
     def __init__(self, token: str, max_char: int, max_play: int, max_play_only: int,
                  max_sound_greets: int, max_sound_size: int):
         self.token = token
