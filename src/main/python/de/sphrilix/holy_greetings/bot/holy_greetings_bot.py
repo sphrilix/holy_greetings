@@ -1,6 +1,5 @@
 import os
 import random
-from collections import Awaitable
 from time import sleep
 
 from discord import Member, VoiceState, TextChannel, Attachment
@@ -8,12 +7,9 @@ from discord.ext.commands import Bot, Context
 import discord
 from gtts import gTTS
 from gtts import lang
-from pip._internal.utils.deprecation import deprecated
-
-from de.sphrilix.holy_greetings.persistence import json_handler
 from de.sphrilix.holy_greetings.dto.greet import Greet
 from de.sphrilix.holy_greetings.persistence.config_handler import ConfigHandler
-from de.sphrilix.holy_greetings.persistence.json_handler import read_user_by_id, write
+from de.sphrilix.holy_greetings.persistence.greetings_handler import GreetingsHandler
 from de.sphrilix.holy_greetings.dto.mp3_greet import MP3Greet
 from de.sphrilix.holy_greetings.dto.play_options import PlayOption, to_play_option
 from de.sphrilix.holy_greetings.dto.user import User
@@ -108,7 +104,7 @@ class HolyGreetingsBot(Bot):
                     msg = args[i + 1]
             if msg == "":
                 await HolyGreetingsBot._write_to_channel("No message given!", ctx.channel)
-            if json_handler.read_user_by_id(u_id) is None:
+            if GreetingsHandler().read_user_by_id(u_id) is None:
                 await HolyGreetingsBot._write_to_channel(f"No user found for {u_id}!", ctx.channel)
             elif len(msg) > self.max_char:
                 await HolyGreetingsBot._write_to_channel("Maximum of 500 character are allowed!", ctx.channel)
@@ -159,8 +155,8 @@ class HolyGreetingsBot(Bot):
         :param after: The given information to retrieve the channel in which to join and greet.
         """
         channel = after.channel
-        user = read_user_by_id(member.name)
-        if user is None and read_user_by_id("unknown") is None or not user.greets:
+        user = GreetingsHandler().read_user_by_id(member.name)
+        if user is None and GreetingsHandler().read_user_by_id("unknown") is None or not user.greets:
             return
         greet = random.choice(user.greets)
         if greet.file is None:
@@ -203,14 +199,14 @@ class HolyGreetingsBot(Bot):
         :param msg: The given greeting.
         :param u_id: The given user id.
         """
-        user = read_user_by_id(u_id)
+        user = GreetingsHandler().read_user_by_id(u_id)
         new_greet = Greet(new_msg, language)
         if user is None:
             user = User(u_id, list())
         if new_greet in user.greets:
             return f"{u_id} has already: '{new_msg}'!"
         user.greets.append(new_greet)
-        write(user)
+        GreetingsHandler().write(user)
         return f"Appended '{new_msg}' for '{u_id}'."
 
     @staticmethod
@@ -220,7 +216,7 @@ class HolyGreetingsBot(Bot):
         :param msg: The given greeting.
         :param u_id: The given user id.
         """
-        user = read_user_by_id(u_id)
+        user = GreetingsHandler().read_user_by_id(u_id)
         if user is None or msg not in [greet.msg for greet in user.greets]:
             return f"Could not drop '{msg}' for '{u_id}'! There maybe a typo in the message, since it is not present " \
                    f"for '{u_id}'!"
@@ -229,7 +225,7 @@ class HolyGreetingsBot(Bot):
             if greet.file:
                 os.remove(greet.file.file_path)
             user.greets.remove(greet)
-            write(user)
+            GreetingsHandler().write(user)
             return f"Dropped '{msg}' for '{u_id}'."
 
     @staticmethod
@@ -238,7 +234,7 @@ class HolyGreetingsBot(Bot):
         Helper method for printing info for the given user id in the given channel.
         :param u_id: The given user id.
         """
-        user = read_user_by_id(u_id)
+        user = GreetingsHandler().read_user_by_id(u_id)
         if user is None or user.greets is None or user.greets == list():
             return f"No greetings found for '{u_id}'!"
         else:
@@ -255,7 +251,7 @@ class HolyGreetingsBot(Bot):
         await channel.send(msg)
 
     async def _add_mp3_greet(self, u_id: str, msg: str, language: str, file: Attachment, option: PlayOption) -> str:
-        user = read_user_by_id(u_id)
+        user = GreetingsHandler().read_user_by_id(u_id)
         file_path = f"{MP3_DIR}{u_id}_{file.filename}"
         new_mp3_greet = Greet(msg, language, MP3Greet(file_path, option))
         if user is None:
@@ -267,6 +263,6 @@ class HolyGreetingsBot(Bot):
         if len([greet for greet in user.greets if greet.file is not None]) > self.max_sound_greets:
             return f"For '{u_id}' already two greetings with mp3 are specified!"
         user.greets.append(new_mp3_greet)
-        write(user)
+        GreetingsHandler().write(user)
         await file.save(f"{MP3_DIR}{u_id}_{file.filename}")
         return f"Appended '{file.filename}' for '{u_id}'."
