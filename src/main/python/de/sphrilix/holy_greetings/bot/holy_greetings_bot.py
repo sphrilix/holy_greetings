@@ -1,15 +1,22 @@
+import os
 import random
+from time import sleep
 
-from discord import Member, VoiceState, TextChannel
+from discord import Member, VoiceState, TextChannel, Attachment
 from discord.ext.commands import Bot, Context
 import discord
 from gtts import gTTS
 from gtts import lang
+from de.sphrilix.holy_greetings.dto.greet import Greet
+from de.sphrilix.holy_greetings.persistence.config_handler import ConfigHandler
+from de.sphrilix.holy_greetings.persistence.greetings_handler import GreetingsHandler
+from de.sphrilix.holy_greetings.dto.mp3_greet import MP3Greet
+from de.sphrilix.holy_greetings.dto.play_options import PlayOption, to_play_option
+from de.sphrilix.holy_greetings.dto.user import User
 
-import json_handler
-from greet import Greet
-from json_handler import read_user_by_id, write
-from user import User
+MP3_DIR = "../../../../../../mp3/"
+
+TTS_FILE = f"{MP3_DIR}tts.mp3"
 
 
 class HolyGreetingsBot(Bot):
@@ -24,11 +31,16 @@ class HolyGreetingsBot(Bot):
         :param token: The token needed to identify and register the bot.
         """
         super().__init__(command_prefix=command_prefix)
-
+        config = ConfigHandler().read()
+        self.max_char = config.max_char
+        self.max_play = config.max_play
+        self.max_play_only = config.max_play_only
+        self.max_sound_greets = config.max_sound_greets
+        self.max_sound_size = config.max_sound_size
         self.token = token
 
         @self.command(name="info")
-        async def _info(ctx: Context, *args: str) -> None:
+        async def info(ctx: Context, *args: str) -> None:
             """
             Send an info message about saved greetings for given u_id. If not given just get info for unknown user.
             :param ctx: Context of the command.
@@ -41,7 +53,7 @@ class HolyGreetingsBot(Bot):
             await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._info_greet(u_id), ctx.channel)
 
         @self.command(name="add")
-        async def _add(ctx: Context, *args: str) -> None:
+        async def add(ctx: Context, *args: str) -> None:
             """
             Add a new given greeting for the given user id.
             :param ctx: Context of the written command.
@@ -50,6 +62,7 @@ class HolyGreetingsBot(Bot):
             language = "en"
             msg = ""
             u_id = "unknown"
+            option = PlayOption.ONLY
             for i, arg in enumerate(args[:-1]):
                 if arg == "-l":
                     language = args[i + 1]
@@ -57,17 +70,26 @@ class HolyGreetingsBot(Bot):
                     u_id = args[i + 1]
                 if arg == "-m":
                     msg = args[i + 1]
+                if arg == "-o":
+                    option = to_play_option(args[i + 1])
             if msg == "":
                 await HolyGreetingsBot._write_to_channel("No message given!", ctx.channel)
             elif lang.tts_langs()[language] is None:
                 await HolyGreetingsBot._write_to_channel(f"Unsupported lang: {language}!", ctx.channel)
-            elif len(msg) > 500:
+            elif len(msg) > self.max_char:
                 await HolyGreetingsBot._write_to_channel(f"Maximum of 500 character are allowed!", ctx.channel)
-            else:
+            elif not ctx.message.attachments:
                 await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._add_greet(msg, u_id, language), ctx.channel)
+            elif len(ctx.message.attachments) > 1:
+                await HolyGreetingsBot._write_to_channel(f"Max one file can be appended!", ctx.channel)
+            elif ctx.message.attachments[0].content_type != "audio/mpeg":
+                await HolyGreetingsBot._write_to_channel(f"Only MP3-Files can be appended!", ctx.channel)
+            elif ctx.message.attachments:
+                await HolyGreetingsBot._write_to_channel(await self._add_mp3_greet(
+                    u_id, msg, language, ctx.message.attachments[0], option), ctx.channel)
 
         @self.command(name="drop")
-        async def _drop(ctx: Context, *args: str) -> None:
+        async def drop(ctx: Context, *args: str) -> None:
             """
             Drop a given greeting for the given user id.
             :param ctx: Context of the command.
@@ -82,15 +104,15 @@ class HolyGreetingsBot(Bot):
                     msg = args[i + 1]
             if msg == "":
                 await HolyGreetingsBot._write_to_channel("No message given!", ctx.channel)
-            if json_handler.read_user_by_id(u_id) is None:
+            if GreetingsHandler().read_user_by_id(u_id) is None:
                 await HolyGreetingsBot._write_to_channel(f"No user found for {u_id}!", ctx.channel)
-            elif len(msg) > 500:
+            elif len(msg) > self.max_char:
                 await HolyGreetingsBot._write_to_channel("Maximum of 500 character are allowed!", ctx.channel)
             else:
                 await HolyGreetingsBot._write_to_channel(HolyGreetingsBot._drop_greet(msg, u_id), ctx.channel)
 
         @self.command(name="lang")
-        async def _lang(ctx: Context):
+        async def lang_info(ctx: Context):
             langs = lang.tts_langs()
             await HolyGreetingsBot._write_to_channel(f"Languages: {chr(10)}"
                                                      f"{chr(10).join([f'{k}={v}' for k, v in langs.items()])}",
@@ -110,11 +132,12 @@ class HolyGreetingsBot(Bot):
             if before.channel is None and after.channel is not None:
                 await self._greet(member, after)
 
-    def run(self) -> None:
+    async def start_bot(self) -> None:
         """
-        Start the bot.
+        Starts the bot.
         """
-        super().run(self.token)
+        print("start")
+        await super().start(self.token)
 
     async def on_ready(self) -> None:
         """
@@ -122,34 +145,48 @@ class HolyGreetingsBot(Bot):
         """
         print(f"Connected with {self.user.display_name}")
 
-    @staticmethod
-    async def _greet(member: Member, after: VoiceState) -> None:
+    async def _greet(self, member: Member, after: VoiceState) -> None:
         """
         Helper method to greet a given member.
         :param member: The given member.
         :param after: The given information to retrieve the channel in which to join and greet.
         """
         channel = after.channel
-        user = read_user_by_id(member.name)
-        if user is None and read_user_by_id("unknown") is None:
+        user = GreetingsHandler().read_user_by_id(member.name)
+        if user is None and GreetingsHandler().read_user_by_id("unknown") is None or not user.greets:
             return
         greet = random.choice(user.greets)
-        tts = gTTS(greet.msg, lang=greet.lang)
-        tts.save("tts.mp3")
-        await HolyGreetingsBot._play(channel)
+        if greet.file is None:
+            tts = gTTS(greet.msg, lang=greet.lang)
+            tts.save(TTS_FILE)
+            await HolyGreetingsBot._play(channel, (TTS_FILE, -1))
+        else:
+            if greet.file.option == PlayOption.ONLY or greet.msg == "":
+                await HolyGreetingsBot._play(channel, (greet.file.file_path, self.max_play_only))
+            else:
+                tts = gTTS(greet.msg, lang=greet.lang)
+                tts.save(TTS_FILE)
+                tracks = [(TTS_FILE, -1), (greet.file.file_path, self.max_play)] \
+                    if greet.file.option == PlayOption.END else [(greet.file.file_path, self.max_play), (TTS_FILE, -1)]
+                await HolyGreetingsBot._play(channel, *tracks)
 
     @staticmethod
-    async def _play(channel, track: str = "./tts.mp3") -> None:
+    async def _play(channel, *tracks: tuple[str, int]) -> None:
         """
         Helper method to play a given .mp3 file.
         :param channel: The to play in.
         :param track: Path to the track.
         """
         voice_client = await channel.connect(reconnect=False)
-        audio_source = await discord.FFmpegOpusAudio.from_probe(track)
-        voice_client.play(audio_source)
-        while voice_client.is_playing():
-            continue
+        for track in tracks:
+            audio_source = await discord.FFmpegOpusAudio.from_probe(track[0])
+            voice_client.play(audio_source)
+            if track[1] < 0:
+                while voice_client.is_playing():
+                    continue
+            else:
+                sleep(track[1])
+            voice_client.stop()
         await voice_client.disconnect()
 
     @staticmethod
@@ -159,14 +196,14 @@ class HolyGreetingsBot(Bot):
         :param msg: The given greeting.
         :param u_id: The given user id.
         """
-        user = read_user_by_id(u_id)
+        user = GreetingsHandler().read_user_by_id(u_id)
         new_greet = Greet(new_msg, language)
         if user is None:
             user = User(u_id, list())
         if new_greet in user.greets:
             return f"{u_id} has already: '{new_msg}'!"
         user.greets.append(new_greet)
-        write(user)
+        GreetingsHandler().write(user)
         return f"Appended '{new_msg}' for '{u_id}'."
 
     @staticmethod
@@ -176,13 +213,16 @@ class HolyGreetingsBot(Bot):
         :param msg: The given greeting.
         :param u_id: The given user id.
         """
-        user = read_user_by_id(u_id)
+        user = GreetingsHandler().read_user_by_id(u_id)
         if user is None or msg not in [greet.msg for greet in user.greets]:
             return f"Could not drop '{msg}' for '{u_id}'! There maybe a typo in the message, since it is not present " \
                    f"for '{u_id}'!"
         else:
-            user.greets.remove(Greet(msg))
-            write(user)
+            greet = user.greets[user.greets.index(Greet(msg))]
+            if greet.file:
+                os.remove(greet.file.file_path)
+            user.greets.remove(greet)
+            GreetingsHandler().write(user)
             return f"Dropped '{msg}' for '{u_id}'."
 
     @staticmethod
@@ -191,7 +231,7 @@ class HolyGreetingsBot(Bot):
         Helper method for printing info for the given user id in the given channel.
         :param u_id: The given user id.
         """
-        user = read_user_by_id(u_id)
+        user = GreetingsHandler().read_user_by_id(u_id)
         if user is None or user.greets is None or user.greets == list():
             return f"No greetings found for '{u_id}'!"
         else:
@@ -206,3 +246,20 @@ class HolyGreetingsBot(Bot):
         :param channel: The given channel.
         """
         await channel.send(msg)
+
+    async def _add_mp3_greet(self, u_id: str, msg: str, language: str, file: Attachment, option: PlayOption) -> str:
+        user = GreetingsHandler().read_user_by_id(u_id)
+        file_path = f"{MP3_DIR}{u_id}_{file.filename}"
+        new_mp3_greet = Greet(msg, language, MP3Greet(file_path, option))
+        if user is None:
+            user = User(u_id, list())
+        if new_mp3_greet in user.greets:
+            return f"{u_id} has already: '{msg}'!"
+        if file.size > self.max_sound_size:
+            return f"'{file.filename}' is to big a max of 2MB are allowed."
+        if len([greet for greet in user.greets if greet.file is not None]) > self.max_sound_greets:
+            return f"For '{u_id}' already two greetings with mp3 are specified!"
+        user.greets.append(new_mp3_greet)
+        GreetingsHandler().write(user)
+        await file.save(f"{MP3_DIR}{u_id}_{file.filename}")
+        return f"Appended '{file.filename}' for '{u_id}'."

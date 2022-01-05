@@ -1,7 +1,8 @@
-from greet import Greet
+from de.sphrilix.holy_greetings.dto.greet import Greet
+from de.sphrilix.holy_greetings.dto.json_object_interface import JsonObjectInterface
 
 
-class User:
+class User(JsonObjectInterface):
     """
     Wrapper class for a dc user with greetings.
     """
@@ -35,4 +36,5 @@ class User:
         Construct a valid JSON representation of an user.
         :return: Returns the JSON representation.
         """
-        return {"u_id": self.u_id, "msgs": [greet.to_json() for greet in self.greets]}
+        return {"u_id": self.u_id,
+                "msgs": [greet.to_json() for greet in self.greets]}
