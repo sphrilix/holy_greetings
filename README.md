@@ -12,8 +12,9 @@ After the Init section, the bot is ready and should have joined your Discord (wi
 Be aware that no greetings are defined initially, so you have to add some before it is going to work. See the commands of the bot below. 
 - <code>!info -u [Optional: user id]</code>:  
   Print out the saved greetings for the given user id. If no user id is specified, it prints the greetings for the *unknown user*[^1].
-- <code>!add -m [new greeting] -u [Optional: user id] -l [Optional: language abbreviation]</code>:  
-   Adds the given greeting in the specified language to the already saved ones of the given user id. If no user id is specified, add it to *unknown user*.
+- <code>!add -m [new greeting] -u [Optional: user id] -l [Optional: language abbreviation] -o [Optional: START, END, ONLY]</code>:  
+   Adds the given greeting in the specified language to the already saved ones of the given user id. If no user id is specified, add it to *unknown user*. You also
+   can now play a sound before/after a greet, or only the sound as greet. This can be achieved by appending a `.mp3`to the message.  
 - <code>!drop -m [greeting] -u [Optional: user id]</code>:  
   Drops the given greeting from the already saved ones of the given user. If no user id is specified, drop from *unknown user*.
 - <code>!lang</code>:  
