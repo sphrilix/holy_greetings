@@ -24,9 +24,10 @@ class BotService(Thread):
         Set initial params.
         """
         Thread.__init__(self)
+        self.running = False
+        config: Config = self._CONFIG_HANDLER.read()
         self._loop = asyncio.get_event_loop()
         self.start()
-        config: Config = self._CONFIG_HANDLER.read()
         if config and config.token != "":
             self.token = config.token
 
@@ -34,12 +35,13 @@ class BotService(Thread):
         """
         Start bot if not running.
         """
-        if not self._BOT_INSTANCE and self.token != "":
+        if not self._BOT_INSTANCE and not self.running:
             c = ConfigHandler().read()
             c.token = self.token
             ConfigHandler().write(c)
             self.name = "bot_service_thread"
             self._loop.create_task(self._run_bot())
+            self.running = True
             self._loop.run_forever()
 
     async def _run_bot(self) -> None:

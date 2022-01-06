@@ -132,6 +132,9 @@ class HolyGreetingsBot(Bot):
             if before.channel is None and after.channel is not None:
                 await self._greet(member, after)
 
+    def run(self, token: str):
+        super().run(token)
+
     async def start_bot(self) -> None:
         """
         Starts the bot.

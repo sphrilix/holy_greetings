@@ -7,6 +7,7 @@ from de.sphrilix.holy_greetings.web_app.forms.run_form import RunForm
 from de.sphrilix.holy_greetings.web_app.service.bot_service import BotService
 
 APP: Flask = Flask(__name__, template_folder="../../../../../templates/")
+# APP: Quart = Quart(__name__, template_folder="../../../../../templates/")
 
 APP.config['SECRET_KEY'] = 'you-will-never-guess'
 
@@ -23,7 +24,7 @@ def index() -> str:
     config_form = ConfigForm()
     c = BOT_SERVICE.get_config()
     return render_template("config.html",
-                           running=BOT_SERVICE.is_running(),
+                           running=BOT_SERVICE.running,
                            run_form=run_form,
                            config_form=config_form,
                            config=c)
