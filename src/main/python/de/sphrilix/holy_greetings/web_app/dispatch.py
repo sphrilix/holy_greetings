@@ -24,7 +24,7 @@ def index() -> str:
     config_form = ConfigForm()
     c = BOT_SERVICE.get_config()
     return render_template("config.html",
-                           running=BOT_SERVICE.running,
+                           running=BOT_SERVICE.is_running(),
                            run_form=run_form,
                            config_form=config_form,
                            config=c)
